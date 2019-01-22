@@ -1,20 +1,21 @@
 <?php
 class Posts extends Controller {
     private $viewModel;
+    private $catModel;
     private $userModel;
     
     public function __construct() {
-        if(!isLoggedIn()) {
+        if(!isLoggedIn() or (isLoggedIn() and !isAdmin())) {
             redirect("users/login");
         }
         
         $this->viewModel = $this->model('Post');
+        $this->catModel = $this->model('Categorie');
         $this->userModel = $this->model('User');
     }   
     
     public function index() {
         $data['posts'] = $this->viewModel->getPosts();
-        
         $this->view("posts/index",$data);
         
     }
@@ -42,6 +43,7 @@ class Posts extends Controller {
                 'title' => trim($_POST['title']),
                 'body' => trim($_POST['body']),
                 'image_url' => $image,
+                'id_cat' => trim($_POST['category']),
                 'user_id' => $_SESSION['user_id']
             ];
             
@@ -71,7 +73,8 @@ class Posts extends Controller {
             $data = [
                 'title' => '',
                 'body'=> '',
-                'image_url' => ''
+                'image_url' => '',
+                'categories' => $this->catModel->getCategories()
             ];
 
             $this->view("posts/add",$data);     
@@ -82,10 +85,12 @@ class Posts extends Controller {
     public function show($id) {
         
         $post = $this->viewModel->getPostById($id);
+        $category = $this->catModel->getCategorieById($post->id_cat);
         $user = $this->userModel->getUserById($post->user_id);
         
         $data = [
             'post' => $post,
+            'category' => $category,
             'user' => $user
         ];
         
@@ -110,13 +115,14 @@ class Posts extends Controller {
                 $imgError = $uploader->getMessage();
                 //$uploader->getMessage(); //get upload error message 
             }
-            die;
+            
             $data = [
                 'post_id' => $id,
                 'title' => trim($_POST['title']),
                 'body' => trim($_POST['body']),
                 'image_url' => $image,
-                'user_id' => $_SESSION['user_id']
+                'user_id' => $_SESSION['user_id'],
+                'id_cat' => trim($_POST['category'])
             ];
             
             if(empty($data['title'])) { $data['title_err'] = 'insert a title for the post';}
@@ -146,7 +152,9 @@ class Posts extends Controller {
                 'title' => $post->title,
                 'body'=> $post->body,
                 'image_url' => $post->image_url,
-                'post_id' => $post->id
+                'post_id' => $post->id,
+                'cat_id' => $post->id_cat,
+                'categories' => $this->catModel->getCategories()
             ];
             
             /* if not the owner can't modify */
@@ -156,6 +164,33 @@ class Posts extends Controller {
             
            
             $this->view("posts/edit",$data);     
+        }
+    }
+    
+    public function delete($id) {
+        if($this->viewModel->delete($id)) {
+            flash('post_added','post deleted :)');
+            redirect('posts');die;
+        }
+    }
+    
+    public function addwishlist($id) {
+        if($this->viewModel->addToWishlist($id)) {
+            flash('pages_msg','post added to wishlist :)');
+            redirect('pages');die;
+        } else {
+            flash('pages_msg','post not added towishlist :(');
+            redirect('pages');die;
+        }
+    }
+    
+    public function removewishlist($id) {
+        if($this->viewModel->removeFromWishlist($id)) {
+            flash('pages_msg','post removed to wishlist :)');
+            redirect('pages');die;
+        } else {
+            flash('pages_msg','post not removed to wishlist :(');
+            redirect('pages');die;
         }
     }
     

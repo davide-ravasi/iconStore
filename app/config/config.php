@@ -11,7 +11,7 @@
     // URL root 
     define('URLROOT','https://mvc_framework_adv-info272473.codeanyapp.com/');
 
-    define('SITENAME','SharePosts');
+    define('SITENAME','SVG Database');
 
     define('APPVERSION','1.0.0');
 
